@@ -3,7 +3,7 @@ import sys
 from pyspark.sql import SparkSession
 
 from lib.logger import Log4J
-from lib.utils import get_spark_app_config, load_survey_df
+from lib.utils import count_by_country, get_spark_app_config, load_survey_df
 
 if __name__ == "__main__":
     conf = get_spark_app_config()
@@ -23,13 +23,12 @@ if __name__ == "__main__":
     # logger.info(conf_out.toDebugString())
     survey_df = load_survey_df(spark, sys.argv[1])
 
-    count_df = survey_df \
-        .where("Age < 40") \
-        .select("Age", "Gender", "Country", "state") \
-        .groupBy("Country") \
-        .count()
+    # foreful partioning the dataframe to test shuffle sort behaviour
+    partioned_survey_df = survey_df.repartition(2)
 
-    count_df.show()
+    count_df = count_by_country(partioned_survey_df)
+
+    logger.info(count_df.collect())
     # survey_df.show()
 
     logger.info("Finished Hello Spark")
